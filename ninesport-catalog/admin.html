@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff2d4a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Nine Panel" />
+  <link rel="manifest" href="admin.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <title>Panel – THE NINE SPORT</title>
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+
+  <header class="admin-header">
+    <div class="container admin-header-inner">
+      <div class="logo-area">
+        <img src="assets/logo.png" alt="" class="logo-img" />
+        <div>
+          <h1>Panel</h1>
+          <p>The Nine Sport</p>
+        </div>
+      </div>
+      <div class="admin-header-actions">
+        <span id="admin-user" class="admin-user-label"></span>
+        <button type="button" class="btn-secondary" id="btn-logout" style="display:none">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="admin-login" class="admin-login container">
+    <div class="auth-sheet admin-login-card">
+      <img src="assets/logo.png" alt="" class="admin-login-logo" />
+      <h2>Acceso al panel</h2>
+      <p class="admin-login-sub">Gestión de pedidos, productos y clientes</p>
+      <p id="admin-login-error" class="auth-error"></p>
+      <form id="admin-login-form">
+        <label>Email</label>
+        <input type="email" id="admin-email" required placeholder="Tu email" autocomplete="username" />
+        <label>Contraseña</label>
+        <input type="password" id="admin-password" required placeholder="••••••••" autocomplete="current-password" />
+        <button type="submit" class="btn-primary btn-full">Ingresar</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="admin-dashboard" class="container" style="display:none">
+    <nav class="admin-nav">
+      <button type="button" class="admin-nav-btn active" data-tab="pedidos">Pedidos</button>
+      <button type="button" class="admin-nav-btn" data-tab="stock">Stock</button>
+      <button type="button" class="admin-nav-btn" data-tab="clientes">Clientes</button>
+    </nav>
+
+    <section id="tab-pedidos" class="admin-tab active">
+      <div class="admin-stats" id="admin-stats">
+        <div class="stat-card"><span class="stat-num" id="stat-nuevo">0</span><span class="stat-label">Nuevos</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-confirmado">0</span><span class="stat-label">Tomados</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-preparado">0</span><span class="stat-label">Preparados</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-entregado">0</span><span class="stat-label">Entregados</span></div>
+      </div>
+      <div class="admin-filters" id="order-filters">
+        <button type="button" class="filter-btn active" data-estado="activo">En curso</button>
+        <button type="button" class="filter-btn" data-estado="nuevo">Nuevos</button>
+        <button type="button" class="filter-btn" data-estado="confirmado">Tomados</button>
+        <button type="button" class="filter-btn" data-estado="preparado">Preparados</button>
+        <button type="button" class="filter-btn" data-estado="cerrado">Cerrados</button>
+        <button type="button" class="filter-btn" data-estado="all">Todos</button>
+      </div>
+      <div id="orders-list" class="orders-list"></div>
+    </section>
+
+    <!-- Detalle de pedido -->
+    <div id="order-detail-modal" class="product-modal" hidden>
+      <div class="product-modal-backdrop" onclick="closeOrderDetail()"></div>
+      <div class="product-modal-sheet order-detail-sheet" role="dialog" aria-modal="true">
+        <div class="product-modal-head">
+          <h2 id="od-title">Detalle del pedido</h2>
+          <button type="button" class="btn-icon od-close-btn" onclick="closeOrderDetail()" aria-label="Cerrar">✕</button>
+        </div>
+        <div id="od-body" class="order-detail-body"></div>
+        <div id="od-actions" class="order-detail-actions pf-actions"></div>
+      </div>
+    </div>
+
+    <section id="tab-stock" class="admin-tab">
+      <div class="stock-header-row">
+        <p class="tab-hint">
+          Cargá productos con foto, precio y talles. Indicá si hay stock en el local o si se encargan al proveedor.
+        </p>
+        <button type="button" class="btn-primary btn-sm" id="btn-add-product">+ Nuevo producto</button>
+      </div>
+      <div id="stock-list" class="stock-list"></div>
+    </section>
+
+    <section id="tab-clientes" class="admin-tab">
+      <div class="clients-toolbar">
+        <div class="admin-stats clients-stats" id="clients-stats">
+          <div class="stat-card"><span class="stat-num" id="stat-clients">0</span><span class="stat-label">Clientes</span></div>
+          <div class="stat-card"><span class="stat-num" id="stat-clients-orders">0</span><span class="stat-label">Pedidos</span></div>
+          <div class="stat-card"><span class="stat-num" id="stat-clients-revenue">$0</span><span class="stat-label">Facturado</span></div>
+        </div>
+        <input type="search" id="clients-search" class="clients-search" placeholder="Buscar por nombre, teléfono o email..." autocomplete="off" />
+      </div>
+      <div id="clients-list" class="clients-list"></div>
+    </section>
+  </div>
+
+  <!-- Modal fuera del container para que no lo tape el layout -->
+  <div id="product-modal" class="product-modal" hidden>
+    <div class="product-modal-backdrop" data-close-modal></div>
+    <div class="product-modal-sheet" role="dialog" aria-labelledby="product-form-title">
+      <div class="product-modal-head">
+        <h2 id="product-form-title">Nuevo producto</h2>
+        <button type="button" class="btn-icon" data-close-modal aria-label="Cerrar">✕</button>
+      </div>
+      <form id="product-form" class="product-form">
+        <input type="hidden" id="pf-id" value="" />
+        <p id="pf-error" class="auth-error"></p>
+
+        <label class="pf-photo-label">
+          <span>Foto del producto</span>
+          <div class="pf-photo-box" id="pf-photo-box">
+            <img id="pf-preview" alt="" hidden />
+            <span id="pf-photo-placeholder">Elegir foto del producto</span>
+            <input type="file" id="pf-file" accept="image/jpeg,image/png,image/webp" />
+          </div>
+        </label>
+
+        <div class="pf-row">
+          <div>
+            <label>Categoría</label>
+            <select id="pf-category">
+              <option value="f11">Botines F11</option>
+              <option value="f5">Botines F5</option>
+              <option value="futsal">Futsal / Sala</option>
+              <option value="zapatillas">Zapatillas</option>
+              <option value="guantes">Guantes</option>
+              <option value="camisetas">Camisetas</option>
+              <option value="accesorios">Accesorios (medias, canilleras…)</option>
+            </select>
+          </div>
+          <div>
+            <label>¿Dónde está?</label>
+            <select id="pf-availability">
+              <option value="stock">En el local (stock)</option>
+              <option value="restock">Para encargar (proveedor)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pf-name-block">
+          <label>Nombre del producto <span class="pf-optional">(opciones rápidas o texto libre)</span></label>
+          <div id="pf-name-builder" class="name-builder" aria-live="polite"></div>
+          <input type="text" id="pf-name" placeholder="Ej: Nike Mercurial Superfly Negro" autocomplete="off" />
+          <p class="pf-name-hint" id="pf-name-hint">Elegí la categoría y, si querés, usá las opciones de marca y modelo.</p>
+        </div>
+
+        <div class="pf-row">
+          <div>
+            <label>Precio ($)</label>
+            <input type="number" id="pf-price" min="0" step="100" value="0" placeholder="0 = consultar" />
+          </div>
+          <div>
+            <label>Cantidad en local</label>
+            <input type="number" id="pf-stock" min="0" value="0" />
+          </div>
+        </div>
+
+        <div class="pf-row">
+          <div>
+            <label>Proveedor</label>
+            <input type="text" id="pf-supplier" placeholder="Nombre o código del proveedor" />
+          </div>
+          <div>
+            <label>Código proveedor</label>
+            <input type="text" id="pf-supplier-code" placeholder="Código interno o del proveedor" />
+          </div>
+        </div>
+        <label>Link carpeta Drive (proveedor)</label>
+        <input type="url" id="pf-drive-url" placeholder="Link a la carpeta del proveedor (opcional)" />
+
+        <label>Talles disponibles <span class="pf-optional">(marcá o escribí separados por coma)</span></label>
+        <div id="pf-size-builder" class="name-builder size-builder"></div>
+        <input type="text" id="pf-sizes" placeholder="39, 40, 41, 42" />
+
+        <label>Badge (opcional)</label>
+        <input type="text" id="pf-badge" placeholder="Nuevo, Oferta, Más vendido…" />
+
+        <label>Descripción corta (opcional)</label>
+        <textarea id="pf-desc" rows="2" placeholder="Notas visibles para el cliente (opcional)"></textarea>
+
+        <label class="pf-check">
+          <input type="checkbox" id="pf-active" checked />
+          Visible en el catálogo
+        </label>
+
+        <div class="pf-actions">
+          <button type="button" class="btn-secondary" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary" id="pf-submit">Guardar producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw-admin.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

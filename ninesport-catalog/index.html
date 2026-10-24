@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="THE NINE SPORT – Botines y accesorios. Quinquela Martín 1590, Villa Canto." />
+  <meta name="theme-color" content="#050505" />
+    <title>THE NINE SPORT</title>
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-content">
+      <div class="logo-area">
+        <img src="assets/logo.png" alt="THE NINE SPORT" class="logo-img" />
+        <div>
+          <h1>The Nine Sport</h1>
+          <p>Quinquela Martín 1590 · Villa Canto</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-icon orders-header-btn" id="orders-btn" hidden onclick="goToMyOrders()" aria-label="Mis pedidos">
+          Pedidos
+          <span id="orders-badge" class="orders-badge" hidden>!</span>
+        </button>
+        <button class="btn-icon auth-header-btn" id="auth-btn" type="button" data-auth="login">Ingresar</button>
+        <a href="https://www.instagram.com/thenine.sport" target="_blank" rel="noopener" class="btn-icon" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          <span class="label">IG</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="store-banner" aria-label="The Nine Sport">
+      <div class="store-banner-bg">
+        <img class="store-banner-img" src="assets/banner.jpg" alt="" onerror="this.style.display='none'" />
+        <div class="store-banner-overlay"></div>
+      </div>
+      <div class="store-banner-content">
+        <img src="assets/logo.png" alt="THE NINE SPORT" class="store-banner-logo" />
+        <h2>Elegí tus productos y <span>confirmá el pedido</span></h2>
+        <p>Stock en el local o encargá para la próxima llegada.</p>
+        <div class="info-chips">
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Quinquela Martín 1590
+          </span>
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            9:30–12:30 · 18–21:30
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="mode-tabs" role="tablist">
+      <button class="mode-tab active" data-mode="all" onclick="setMode('all', this)" role="tab">
+        Todos
+        <small>Catálogo completo</small>
+      </button>
+      <button class="mode-tab" data-mode="stock" onclick="setMode('stock', this)" role="tab">
+        En el local
+        <small>Listo para retirar</small>
+      </button>
+      <button class="mode-tab" data-mode="restock" onclick="setMode('restock', this)" role="tab">
+        Para encargar
+        <small>Próxima llegada</small>
+      </button>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="filter-btn active" data-cat="all" onclick="filterCategory('all', this)">Todos</button>
+      <button class="filter-btn" data-cat="f11" onclick="filterCategory('f11', this)">F11</button>
+      <button class="filter-btn" data-cat="f5" onclick="filterCategory('f5', this)">F5</button>
+      <button class="filter-btn" data-cat="futsal" onclick="filterCategory('futsal', this)">Futsal</button>
+      <button class="filter-btn" data-cat="zapatillas" onclick="filterCategory('zapatillas', this)">Zapatillas</button>
+      <button class="filter-btn" data-cat="guantes" onclick="filterCategory('guantes', this)">Guantes</button>
+      <button class="filter-btn" data-cat="camisetas" onclick="filterCategory('camisetas', this)">Camisetas</button>
+      <button class="filter-btn" data-cat="accesorios" onclick="filterCategory('accesorios', this)">Accesorios</button>
+    </div>
+
+    <div class="section-bar">
+      <h3 id="section-title">Catálogo</h3>
+      <span id="product-count"></span>
+    </div>
+
+    <div id="product-grid" class="product-grid"></div>
+  </main>
+
+  <button class="floating-cart-btn" onclick="toggleCartDrawer()" aria-label="Abrir carrito">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6L5 2H2"/></svg>
+    <span id="cart-count" data-empty="1"></span>
+  </button>
+
+  <div class="cart-overlay" id="cart-overlay" onclick="toggleCartDrawer()"></div>
+
+  <aside id="cart-drawer" class="cart-drawer" aria-label="Carrito">
+    <div class="drawer-header">
+      <h3>Tu pedido</h3>
+      <button onclick="toggleCartDrawer()" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="cart-items" class="drawer-body">
+      <p class="empty-cart">El carrito está vacío.</p>
+    </div>
+    <div class="drawer-footer">
+      <div class="total-row">
+        <span>Total estimado</span>
+        <strong id="cart-total">$0</strong>
+      </div>
+      <button class="btn-wa" id="btn-checkout" onclick="checkoutWhatsApp()" disabled>
+        Confirmar pedido
+      </button>
+      <p class="cart-shipping-note">Retiro en el local o envíos a todo el país · Te coordinamos por WhatsApp</p>
+    </div>
+  </aside>
+
+  <!-- Product modal -->
+  <div id="product-modal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-container" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button>
+      <div class="modal-scroll">
+        <div id="modal-body" class="modal-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth modal -->
+  <div id="auth-modal" class="modal-overlay auth-overlay" onclick="closeAuthModal()">
+    <div class="auth-sheet" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeAuthModal()" aria-label="Cerrar">✕</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Ingresar</button>
+        <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Crear cuenta</button>
+      </div>
+      <p id="auth-error" class="auth-error"></p>
+
+      <form id="form-login" class="auth-form active" onsubmit="handleLogin(event)">
+        <label>Email</label>
+        <input type="email" id="login-email" required placeholder="tu@email.com" autocomplete="email" />
+        <label>Contraseña</label>
+        <input type="password" id="login-password" required placeholder="••••••••" minlength="6" autocomplete="current-password" />
+        <button type="submit" class="btn-primary btn-full">Ingresar</button>
+      </form>
+
+      <form id="form-register" class="auth-form" onsubmit="handleRegister(event)">
+        <div class="auth-row">
+          <div>
+            <label>Nombre</label>
+            <input type="text" id="reg-nombre" required placeholder="Juan" autocomplete="given-name" />
+          </div>
+          <div>
+            <label>Apellido</label>
+            <input type="text" id="reg-apellido" required placeholder="Pérez" autocomplete="family-name" />
+          </div>
+        </div>
+        <label>WhatsApp (con código de área)</label>
+        <input type="tel" id="reg-telefono" required placeholder="3364 123456" autocomplete="tel" inputmode="tel" />
+        <label>Email</label>
+        <input type="email" id="reg-email" required placeholder="tu@email.com" autocomplete="email" />
+        <label>Contraseña (mín. 6)</label>
+        <input type="password" id="reg-password" required placeholder="••••••••" minlength="6" autocomplete="new-password" />
+        <label>Repetir contraseña</label>
+        <input type="password" id="reg-password2" required placeholder="••••••••" minlength="6" autocomplete="new-password" />
+        <button type="submit" class="btn-primary btn-full">Crear cuenta</button>
+      </form>
+      <p class="auth-note">Necesitás una cuenta para enviar el pedido. Tus datos solo se usan para coordinar el retiro y avisarte por WhatsApp.</p>
+    </div>
+  </div>
+
+  <!-- Cuenta del cliente -->
+  <div id="account-modal" class="modal-overlay auth-overlay" onclick="closeAccountModal()">
+    <div class="auth-sheet account-sheet" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeAccountModal()" aria-label="Cerrar">✕</button>
+      <h2 class="account-title">Mi cuenta</h2>
+      <div class="account-tabs">
+        <button type="button" class="account-tab active" data-atab="perfil" onclick="switchAccountTab('perfil')">Perfil</button>
+        <button type="button" class="account-tab" data-atab="pedidos" onclick="switchAccountTab('pedidos')">Mis pedidos</button>
+      </div>
+      <p id="account-error" class="auth-error"></p>
+      <p id="account-ok" class="account-ok"></p>
+
+      <div id="account-panel-perfil" class="account-panel active">
+        <form id="form-profile" onsubmit="saveMyProfile(event)">
+          <div class="auth-row">
+            <div>
+              <label>Nombre</label>
+              <input type="text" id="prof-nombre" required autocomplete="given-name" />
+            </div>
+            <div>
+              <label>Apellido</label>
+              <input type="text" id="prof-apellido" required autocomplete="family-name" />
+            </div>
+          </div>
+          <label>WhatsApp</label>
+          <input type="tel" id="prof-telefono" required autocomplete="tel" inputmode="tel" />
+          <label>Email</label>
+          <input type="email" id="prof-email" disabled class="input-disabled" />
+          <button type="submit" class="btn-primary btn-full">Guardar cambios</button>
+        </form>
+        <button type="button" class="btn-secondary btn-full btn-logout-account" onclick="logout()">Cerrar sesión</button>
+      </div>
+
+      <div id="account-panel-pedidos" class="account-panel">
+        <div id="my-orders-list" class="my-orders-list">
+          <p class="empty-grid">Cargando pedidos...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Agregado al carrito</div>
+
+  <!-- Pedido enviado + seguimiento -->
+  <div id="order-success" class="modal-overlay auth-overlay" onclick="closeOrderSuccess()">
+    <div class="auth-sheet order-success-sheet" onclick="event.stopPropagation()">
+      <div class="order-success-icon">✓</div>
+      <h2>¡Pedido recibido!</h2>
+      <p class="order-success-text">
+        Recibimos tu pedido. El local te va a escribir por WhatsApp para coordinar el pago,
+        el retiro o el <strong>envío a todo el país</strong>.
+      </p>
+      <p class="order-success-total">Total: <strong id="order-success-total">$0</strong></p>
+      <button type="button" class="btn-primary btn-full" onclick="goToMyOrders()">Ver seguimiento del pedido</button>
+      <button type="button" class="btn-secondary btn-full" onclick="closeOrderSuccess()" style="margin-top:10px">Seguir comprando</button>
+      <p class="auth-note">También: arriba a la derecha → <strong>Mi cuenta</strong> → <strong>Mis pedidos</strong>.</p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <img src="assets/logo.png" alt="" class="footer-logo" />
+      <p class="footer-brand">The Nine Sport</p>
+      <p>Quinquela Martín 1590 · Villa Canto<br />9:30–12:30 hs · 18:00–21:30 hs</p>
+      <p class="dev-credit">
+        Desarrollado por <a href="https://gamarraeric.github.io/" target="_blank" rel="noopener">Eric Gamarra</a>
+        · ¿Querés un catálogo así?
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
