@@ -1,6 +1,50 @@
 /* The Nine Sport — Catálogo y pedidos */
 
+/* Sesión de clientes (independiente del panel) */
+if (typeof window !== "undefined" && window.supabaseStore) {
+  window.supabase = window.supabaseStore;
+  var supabase = window.supabaseStore;
+}
+
 const products = []; // se llena desde Supabase (tabla products)
+const PRODUCTS_CACHE_KEY = "nine_products_v1";
+const PRODUCTS_CACHE_MS = 3 * 60 * 1000; // 3 min
+
+function readProductsCache() {
+  try {
+    const raw = sessionStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.items) || !parsed.at) return null;
+    if (Date.now() - parsed.at > PRODUCTS_CACHE_MS) return null;
+    return parsed.items;
+  } catch {
+    return null;
+  }
+}
+
+function writeProductsCache(items) {
+  try {
+    sessionStorage.setItem(
+      PRODUCTS_CACHE_KEY,
+      JSON.stringify({ at: Date.now(), items })
+    );
+  } catch (_) {}
+}
+
+/** Miniatura más liviana si la foto está en Storage de Supabase */
+function productThumb(url) {
+  if (!url || typeof url !== "string") return "assets/logo.png";
+  // Transform de imagen de Supabase (si el proyecto lo tiene activo)
+  if (url.includes("/storage/v1/object/public/")) {
+    return url.replace(
+      "/storage/v1/object/public/",
+      "/storage/v1/render/image/public/"
+    ) + (url.includes("?") ? "&" : "?") + "width=480&quality=65&resize=contain";
+  }
+  return url;
+}
+
 
 
 const categoryLabels = {
@@ -30,10 +74,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateCartUI();
     return;
   }
-  await loadProductsFromDB();
-  applyFilters();
+
+  // Pintar al toque con caché (si hay) mientras llega la red
+  const cached = readProductsCache();
+  if (cached && cached.length) {
+    products.length = 0;
+    cached.forEach((p) => products.push(p));
+    applyFilters();
+  }
+
   updateCartUI();
-  await checkSession();
+  // Productos y sesión en paralelo
+  await Promise.all([loadProductsFromDB(), checkSession()]);
+  applyFilters();
   subscribeProductsRealtime();
   supabase.auth.onAuthStateChange((_event, session) => {
     currentUser = session?.user || null;
@@ -159,7 +212,7 @@ async function loadProductsFromDB() {
   try {
     const { data, error } = await supabase
       .from("products")
-      .select("*")
+      .select("id,name,category,price,badge,images,sizes,description,stock_qty,availability,supplier,supplier_code,drive_folder_url,active")
       .eq("active", true)
       .order("id");
 
@@ -198,6 +251,7 @@ async function loadProductsFromDB() {
         drive_folder_url: p.drive_folder_url || "",
       });
     });
+    writeProductsCache(products);
     console.log("Productos cargados desde Supabase:", products.length);
   } catch (e) {
     console.error("loadProductsFromDB", e);
@@ -613,6 +667,9 @@ function renderProducts(items) {
   container.innerHTML = items.map((p, idx) => {
     const isRestock = (p.availability || "stock") === "restock";
     const isAgotado = !isRestock && Number(p.stock_qty) <= 0;
+    const rawImg = (p.images && p.images[0]) || "assets/logo.png";
+    const thumb = productThumb(rawImg);
+    const eager = idx < 6;
     let badge = "";
     if (isAgotado) badge = `<span class="badge badge-agotado">Agotado</span>`;
     else if (p.badge) badge = `<span class="badge">${p.badge}</span>`;
@@ -628,7 +685,7 @@ function renderProducts(items) {
     <article class="product-card ${isAgotado ? "is-agotado" : ""} ${isRestock ? "is-restock" : ""}" style="--i:${idx}">
       ${badge}
       <div class="card-img-wrapper" onclick="openProductModal(${p.id})">
-        <img src="${(p.images && p.images[0]) || "assets/logo.png"}" alt="${p.name}" loading="lazy" decoding="async" class="card-img" onload="this.classList.add('loaded')" onerror="this.src='assets/logo.png';this.classList.add('loaded')" />
+        <img src="${thumb}" alt="${p.name}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" class="card-img" onload="this.classList.add('loaded')" onerror="this.onerror=null;this.src='${rawImg.replace(/'/g, "\'")}';this.classList.add('loaded')" />
         <span class="card-img-hint">Ver fotos</span>
         ${isAgotado ? `<span class="agotado-overlay">Agotado · podés encargar</span>` : ""}
       </div>
