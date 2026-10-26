@@ -1,5 +1,11 @@
 /* The Nine Sport — Panel de gestión */
 
+/* Sesión del dueño (independiente de la tienda) */
+if (typeof window !== "undefined" && window.supabaseAdmin) {
+  window.supabase = window.supabaseAdmin;
+  var supabase = window.supabaseAdmin;
+}
+
 let allOrders = [];
 let allProducts = [];
 let currentFilter = "activo";
@@ -320,13 +326,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (err) err.textContent = "Error de conexión Supabase.";
     return;
   }
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) showDashboard(session.user);
-  else showLogin();
 
-  supabase.auth.onAuthStateChange((_e, session) => {
-    if (session?.user) showDashboard(session.user);
-    else showLogin();
+  // Email del panel fijo al dueño
+  const emailInput = document.getElementById("admin-email");
+  if (emailInput && typeof OWNER_EMAIL === "string") {
+    emailInput.value = OWNER_EMAIL;
+    emailInput.readOnly = true;
+    emailInput.title = "Solo la cuenta del local puede entrar al panel";
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user && isOwnerEmail(session.user.email)) {
+    showDashboard(session.user);
+  } else {
+    if (session?.user) {
+      // Había otra cuenta en esta sesión de panel → cerrar
+      await supabase.auth.signOut();
+    }
+    showLogin();
+  }
+
+  supabase.auth.onAuthStateChange(async (_e, session) => {
+    if (session?.user && isOwnerEmail(session.user.email)) {
+      showDashboard(session.user);
+    } else {
+      if (session?.user && !isOwnerEmail(session.user.email)) {
+        await supabase.auth.signOut();
+        const errEl = document.getElementById("admin-login-error");
+        if (errEl) errEl.textContent = "Esta cuenta no tiene acceso al panel. Solo el local.";
+      }
+      showLogin();
+    }
   });
 });
 
@@ -426,6 +456,10 @@ function showLogin() {
 }
 
 function showDashboard(user) {
+  if (!user || !isOwnerEmail(user.email)) {
+    showLogin();
+    return;
+  }
   document.getElementById("admin-login").style.display = "none";
   document.getElementById("admin-dashboard").style.display = "block";
   document.getElementById("btn-logout").style.display = "inline-flex";
@@ -440,10 +474,30 @@ async function adminLogin(e) {
   e.preventDefault();
   const errEl = document.getElementById("admin-login-error");
   errEl.textContent = "";
-  const email = document.getElementById("admin-email").value.trim();
+
+  const email = (document.getElementById("admin-email").value || OWNER_EMAIL || "").trim();
   const password = document.getElementById("admin-password").value;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) errEl.textContent = error.message;
+
+  if (!isOwnerEmail(email)) {
+    errEl.textContent = "Solo la cuenta del local puede entrar al panel.";
+    return;
+  }
+  if (!password) {
+    errEl.textContent = "Ingresá la contraseña.";
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = error.message === "Invalid login credentials"
+      ? "Email o contraseña incorrectos."
+      : error.message;
+    return;
+  }
+  if (!data?.user || !isOwnerEmail(data.user.email)) {
+    await supabase.auth.signOut();
+    errEl.textContent = "Esta cuenta no tiene acceso al panel.";
+  }
 }
 
 async function adminLogout() {
@@ -1083,7 +1137,34 @@ document.addEventListener("change", (e) => {
   document.getElementById("pf-photo-placeholder").hidden = true;
 });
 
+
+async function compressImageFile(file, maxSide = 1200, quality = 0.78) {
+  if (!file || !file.type.startsWith("image/")) return file;
+  if (file.size < 350000) return file; // ya es liviana
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
+    if (!blob) return file;
+    return new File([blob], (file.name || "foto").replace(/\.\w+$/, "") + ".jpg", {
+      type: "image/jpeg",
+      lastModified: Date.now()
+    });
+  } catch {
+    return file;
+  }
+}
+
 async function uploadProductPhoto(file) {
+  file = await compressImageFile(file);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabase.storage.from("products").upload(path, file, {
