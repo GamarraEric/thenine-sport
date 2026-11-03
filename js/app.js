@@ -843,6 +843,33 @@ function isProductAgotado(product) {
   return Number(product.stock_qty) <= 0;
 }
 
+/** Máximo por línea en encargos (restock) */
+const MAX_RESTOCK_QTY = 3;
+
+function cartQtyForProduct(productId, availability) {
+  return cart
+    .filter((i) => i.id === productId && i.availability === availability)
+    .reduce((a, i) => a + Number(i.quantity || 0), 0);
+}
+
+/** Tope según stock real o encargo */
+function maxAllowedQty(product, availability) {
+  if (!product) return 1;
+  const av = availability || product.availability || "stock";
+  if (av === "restock") return MAX_RESTOCK_QTY;
+  const stock = Math.max(0, Number(product.stock_qty) || 0);
+  return stock;
+}
+
+function remainingAllowed(product, availability, sizeVal) {
+  const av = availability || product.availability || "stock";
+  const max = maxAllowedQty(product, av);
+  // Stock es por producto (no por talle): cuenta todo el carrito de ese id en stock
+  const inCart = cartQtyForProduct(product.id, av);
+  return Math.max(0, max - inCart);
+}
+
+
 function quickAddAsRestock(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
@@ -864,6 +891,25 @@ function addToCart(product, size) {
   if (!product) return;
   const sizeVal = size || (product.sizes && product.sizes[0]) || "Único";
   const availability = product.availability || "stock";
+
+  // Producto fresco desde catálogo (por si cambió el stock)
+  const live = products.find((p) => p.id === product.id) || product;
+  const max = maxAllowedQty(live, availability);
+  const inCart = cartQtyForProduct(live.id, availability);
+
+  if (availability !== "restock" && max <= 0) {
+    showToast("No hay stock de este producto");
+    return;
+  }
+  if (inCart >= max) {
+    if (availability === "restock") {
+      showToast("Máximo " + MAX_RESTOCK_QTY + " unidades por encargo");
+    } else {
+      showToast("Solo hay " + max + " disponible" + (max === 1 ? "" : "s"));
+    }
+    return;
+  }
+
   const existing = cart.find(
     (item) => item.id === product.id && item.size === sizeVal && item.availability === availability
   );
@@ -888,8 +934,25 @@ function addToCart(product, size) {
 
 function changeQty(index, delta) {
   if (!cart[index]) return;
-  cart[index].quantity += delta;
-  if (cart[index].quantity <= 0) cart.splice(index, 1);
+  const item = cart[index];
+
+  if (delta > 0) {
+    const live = products.find((p) => p.id === item.id);
+    const max = maxAllowedQty(live || item, item.availability);
+    // Cantidad actual de este producto en carrito (todos los talles)
+    const inCart = cartQtyForProduct(item.id, item.availability);
+    if (inCart >= max) {
+      if (item.availability === "restock") {
+        showToast("Máximo " + MAX_RESTOCK_QTY + " unidades por encargo");
+      } else {
+        showToast("Solo hay " + max + " disponible" + (max === 1 ? "" : "s"));
+      }
+      return;
+    }
+  }
+
+  item.quantity += delta;
+  if (item.quantity <= 0) cart.splice(index, 1);
   updateCartUI();
 }
 
@@ -971,6 +1034,41 @@ async function processOrder() {
     btn.textContent = "Enviando…";
   }
 
+  // Refrescar stock antes de confirmar (evita vender de más si otro compró)
+  try {
+    await loadProductsFromDB();
+  } catch (_) {}
+
+  // Validar cantidades vs stock / tope de encargo
+  for (const item of cart) {
+    const live = products.find((p) => p.id === item.id);
+    const max = maxAllowedQty(live || item, item.availability);
+    if (item.availability !== "restock") {
+      const need = cart
+        .filter((i) => i.id === item.id && i.availability !== "restock")
+        .reduce((a, i) => a + Number(i.quantity || 0), 0);
+      if (need > max) {
+        showToast(
+          (live && live.name ? live.name : "Un producto") +
+            ": solo hay " + max + " en stock. Ajustá el carrito."
+        );
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Confirmar pedido";
+        }
+        updateCartUI();
+        return;
+      }
+    } else if (Number(item.quantity) > MAX_RESTOCK_QTY) {
+      showToast("Máximo " + MAX_RESTOCK_QTY + " unidades por artículo en encargo");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Confirmar pedido";
+      }
+      return;
+    }
+  }
+
   const total = cart.reduce((a, i) => a + i.price * i.quantity, 0);
   const items = cart.map((i) => ({
     id: i.id,
@@ -1005,6 +1103,9 @@ async function processOrder() {
 
     cart = [];
     updateCartUI();
+    // Actualizar stock visible en la tienda
+    await loadProductsFromDB();
+    applyFilters();
     if (document.getElementById("cart-drawer")?.classList.contains("open")) {
       toggleCartDrawer();
     }
