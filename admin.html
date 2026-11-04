@@ -185,9 +185,16 @@
         <label>Link carpeta Drive (proveedor)</label>
         <input type="url" id="pf-drive-url" placeholder="Link a la carpeta del proveedor (opcional)" />
 
-        <label>Talles disponibles <span class="pf-optional">(marcá o escribí separados por coma)</span></label>
+        <label>Sistema de talle del producto</label>
+        <div class="size-system-row">
+          <label class="size-sys-opt"><input type="radio" name="pf-size-system" value="arg" checked /> ARG</label>
+          <label class="size-sys-opt"><input type="radio" name="pf-size-system" value="eur" /> EUR</label>
+          <label class="size-sys-opt"><input type="radio" name="pf-size-system" value="us" /> US</label>
+        </div>
+        <p class="size-hint">Cómo viene el calzado (caja / Drive). En la tienda se muestra ese sistema y el equivalente ARG.</p>
+        <label>Talles disponibles <span class="pf-optional">(marcá o escribí)</span></label>
         <div id="pf-size-builder" class="name-builder size-builder"></div>
-        <input type="text" id="pf-sizes" placeholder="39, 40, 41, 42" />
+        <input type="text" id="pf-sizes" placeholder="Ej: 40, 41, 42" />
 
         <label>Badge (opcional)</label>
         <input type="text" id="pf-badge" placeholder="Nuevo, Oferta, Más vendido…" />
@@ -195,10 +202,14 @@
         <label>Descripción corta (opcional)</label>
         <textarea id="pf-desc" rows="2" placeholder="Notas visibles para el cliente (opcional)"></textarea>
 
-        <label class="pf-check">
-          <input type="checkbox" id="pf-active" checked />
-          Visible en el catálogo
-        </label>
+        <div class="pf-visible-wrap" id="pf-visible-wrap">
+          <label class="pf-check pf-visible">
+            <input type="checkbox" id="pf-active" checked />
+            <span class="pf-switch" aria-hidden="true"></span>
+            <span id="pf-active-label">Visible en la tienda — SÍ</span>
+          </label>
+          <p class="pf-visible-hint">Si está en NO, el producto no aparece en el catálogo (sí en el panel).</p>
+        </div>
 
         <div class="pf-actions">
           <button type="button" class="btn-secondary" data-close-modal>Cancelar</button>
