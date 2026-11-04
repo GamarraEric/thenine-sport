@@ -53,3 +53,63 @@ function isOwnerEmail(email) {
   if (!email) return false;
   return String(email).trim().toLowerCase() === String(OWNER_EMAIL).trim().toLowerCase();
 }
+
+
+
+
+
+/* Guía de talles The Nine Sport (tabla oficial del local) */
+const SIZE_GUIDE = [
+  { arg: 35, eur: 36, us: "4", cm: "23" },
+  { arg: 36, eur: 37, us: "5", cm: "23,5" },
+  { arg: 37, eur: 38, us: "5,5", cm: "24" },
+  { arg: 38, eur: 39, us: "6,5", cm: "24,5" },
+  { arg: 39, eur: 40, us: "7", cm: "25" },
+  { arg: 40, eur: 41, us: "8", cm: "26" },
+  { arg: 41, eur: 42, us: "8,5", cm: "26,5" },
+  { arg: 42, eur: 43, us: "9,5", cm: "27,5" },
+  { arg: 43, eur: 44, us: "10", cm: "28" },
+  { arg: 44, eur: 45, us: "11", cm: "29" }
+];
+const SIZE_SYSTEM_LABEL = { arg: "ARG", eur: "EUR", us: "US" };
+
+function findSizeRow(value, system) {
+  const v = String(value).trim().replace(",", ".");
+  const num = parseFloat(v);
+  const sys = (system || "arg").toLowerCase();
+  return SIZE_GUIDE.find((row) => {
+    if (sys === "arg") return row.arg === parseInt(v, 10);
+    if (sys === "eur") return row.eur === parseInt(v, 10);
+    if (sys === "us") {
+      return String(row.us).replace(",", ".") === v || parseFloat(String(row.us).replace(",", ".")) === num;
+    }
+    return false;
+  }) || null;
+}
+
+function formatSizeLabel(raw, sizeSystem) {
+  const s = String(raw || "").trim();
+  if (!s) return s;
+  const sys = (sizeSystem || "arg").toLowerCase();
+  if (!/^\d+([.,]\d+)?$/.test(s)) return s;
+  const row = findSizeRow(s, sys);
+  if (!row) return s + " " + (SIZE_SYSTEM_LABEL[sys] || sys.toUpperCase());
+  if (sys === "arg") {
+    return row.arg + " ARG · " + row.eur + " EUR · US " + row.us + " · " + row.cm + " cm";
+  }
+  if (sys === "eur") {
+    return s + " EUR · " + row.arg + " ARG · US " + row.us + " · " + row.cm + " cm";
+  }
+  return s + " US · " + row.arg + " ARG · " + row.eur + " EUR · " + row.cm + " cm";
+}
+
+function formatSizeChip(raw, sizeSystem) {
+  const s = String(raw || "").trim();
+  const sys = (sizeSystem || "arg").toLowerCase();
+  if (!/^\d+([.,]\d+)?$/.test(s)) return s;
+  const row = findSizeRow(s, sys);
+  if (!row) return s + " " + (SIZE_SYSTEM_LABEL[sys] || "ARG");
+  if (sys === "arg") return s + " ARG (" + row.eur + " EUR)";
+  if (sys === "eur") return s + " EUR (" + row.arg + " ARG)";
+  return s + " US (" + row.arg + " ARG)";
+}
