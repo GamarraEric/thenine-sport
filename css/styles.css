@@ -2018,3 +2018,31 @@ body {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+.size-eq-hint {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-3, #888);
+  line-height: 1.35;
+}
+.req-star { color: var(--neon, #ff2d4a); }
+#modal-size.input-error {
+  border-color: var(--neon, #ff2d4a) !important;
+  box-shadow: 0 0 0 3px rgba(255,45,74,0.25);
+}
+.toast {
+  z-index: 9999 !important;
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.35;
+  max-width: min(92vw, 340px);
+}
+
+/* toast-top-fix */
+.toast {
+  top: calc(1rem + env(safe-area-inset-top, 0px)) !important;
+  bottom: auto !important;
+  z-index: 10000 !important;
+  white-space: normal !important;
+  max-width: min(92vw, 360px) !important;
+}
