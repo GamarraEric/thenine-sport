@@ -212,7 +212,7 @@ async function loadProductsFromDB() {
   try {
     const { data, error } = await supabase
       .from("products")
-      .select("id,name,category,price,badge,images,sizes,description,stock_qty,availability,supplier,supplier_code,drive_folder_url,active")
+      .select("id,name,category,price,badge,images,sizes,description,stock_qty,availability,supplier,supplier_code,drive_folder_url,active,size_system")
       .eq("active", true)
       .order("id");
 
@@ -234,7 +234,9 @@ async function loadProductsFromDB() {
     data.forEach((p) => {
       if (seen.has(p.id)) return;
       seen.add(p.id);
-      const sizes = Array.isArray(p.sizes) && p.sizes.length ? p.sizes : ["Único"];
+      const rawSizes = Array.isArray(p.sizes) && p.sizes.length ? p.sizes : ["Único"];
+      const sizes = [...new Set(rawSizes.map((s) => String(s).trim()).filter(Boolean))];
+      if (!sizes.length) sizes.push("Único");
       products.push({
         id: p.id,
         availability: p.availability || "stock",
@@ -249,6 +251,7 @@ async function loadProductsFromDB() {
         supplier: p.supplier || "",
         supplier_code: p.supplier_code || "",
         drive_folder_url: p.drive_folder_url || "",
+        size_system: (p.size_system || "arg").toLowerCase(),
       });
     });
     writeProductsCache(products);
@@ -676,10 +679,10 @@ function renderProducts(items) {
     else if (isRestock) badge = `<span class="badge restock">Para encargar</span>`;
 
     const cartBtn = isAgotado
-      ? `<button class="btn-primary btn-restock" onclick="quickAddAsRestock(${p.id})">Encargar restock</button>`
+      ? `<button type="button" class="btn-primary btn-restock" onclick="openProductModal(${p.id})">Ver y encargar</button>`
       : isRestock
-        ? `<button class="btn-primary btn-restock" onclick="quickAddToCart(${p.id})">Encargar</button>`
-        : `<button class="btn-primary" onclick="quickAddToCart(${p.id})">+ Carrito</button>`;
+        ? `<button type="button" class="btn-primary btn-restock" onclick="openProductModal(${p.id})">Ver y encargar</button>`
+        : `<button type="button" class="btn-primary" onclick="openProductModal(${p.id})">Ver producto</button>`;
 
     return `
     <article class="product-card ${isAgotado ? "is-agotado" : ""} ${isRestock ? "is-restock" : ""}" style="--i:${idx}">
@@ -741,10 +744,15 @@ function renderModal() {
       <h2>${product.name}</h2>
       <p class="modal-price">$${product.price.toLocaleString("es-AR")}</p>
       <p class="description">${product.description}</p>
-      <label for="modal-size">Talle / Opción</label>
-      <select id="modal-size">
-        ${product.sizes.map(s => `<option value="${s}">${s}</option>`).join("")}
+      <label for="modal-size">Talle <span class="req-star">*</span></label>
+      <select id="modal-size" required>
+        <option value="" disabled selected>Elegí el talle</option>
+        ${[...new Set((product.sizes || []).map(s => String(s).trim()).filter(Boolean))].map(s => {
+          const label = typeof formatSizeLabel === "function" ? formatSizeLabel(s, product.size_system) : s;
+          return `<option value="${s}">${label}</option>`;
+        }).join("")}
       </select>
+      <p class="size-eq-hint">AR = argentino · EU = europeo (AR + 1) · US y cm aproximados</p>
       ${(() => {
         const isRestock = (product.availability || "stock") === "restock";
         const isAgotado = !isRestock && Number(product.stock_qty) <= 0;
@@ -818,22 +826,25 @@ function toggleCartDrawer() {
 
 function addModalToCart(productId) {
   const product = products.find(p => p.id === productId);
-  const size = document.getElementById("modal-size").value;
+  if (!product) return;
+  const sizeEl = document.getElementById("modal-size");
+  const size = sizeEl ? sizeEl.value : "";
+  if (!size) {
+    showToast("Elegí un talle para continuar");
+    if (sizeEl) {
+      sizeEl.focus();
+      sizeEl.classList.add("input-error");
+      setTimeout(() => sizeEl.classList.remove("input-error"), 1200);
+    }
+    return;
+  }
   addToCart(product, size);
   closeModal();
   showToast(product.availability === "restock" ? "Encargo agregado" : "Agregado al carrito");
 }
 
 function quickAddToCart(productId) {
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-  if (isProductAgotado(product)) {
-    quickAddAsRestock(productId);
-    return;
-  }
-  const size = (product.sizes && product.sizes[0]) || "Único";
-  addToCart(product, size);
-  showToast(product.availability === "restock" ? "Encargo agregado" : "Agregado al carrito");
+  openProductModal(productId);
 }
 
 
@@ -871,19 +882,25 @@ function remainingAllowed(product, availability, sizeVal) {
 
 
 function quickAddAsRestock(productId) {
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-  const size = (product.sizes && product.sizes[0]) || "Único";
-  addToCart({ ...product, availability: "restock" }, size);
-  showToast("Encargo agregado (próximo restock)");
+  openProductModal(productId);
 }
 
 function addModalAsRestock(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
   const sizeEl = document.getElementById("modal-size");
-  const size = sizeEl ? sizeEl.value : ((product.sizes && product.sizes[0]) || "Único");
+  const size = sizeEl ? sizeEl.value : "";
+  if (!size) {
+    showToast("Elegí un talle para continuar");
+    if (sizeEl) {
+      sizeEl.focus();
+      sizeEl.classList.add("input-error");
+      setTimeout(() => sizeEl.classList.remove("input-error"), 1200);
+    }
+    return;
+  }
   addToCart({ ...product, availability: "restock" }, size);
+  closeModal();
   showToast("Encargo agregado (próximo restock)");
 }
 
@@ -903,9 +920,9 @@ function addToCart(product, size) {
   }
   if (inCart >= max) {
     if (availability === "restock") {
-      showToast("Máximo " + MAX_RESTOCK_QTY + " unidades por encargo");
+      showToast("En encargos el máximo es " + MAX_RESTOCK_QTY + " por producto");
     } else {
-      showToast("Solo hay " + max + " disponible" + (max === 1 ? "" : "s"));
+      showToast("No se puede: solo hay " + max + " en stock");
     }
     return;
   }
@@ -927,6 +944,7 @@ function addToCart(product, size) {
       supplier: product.supplier || "",
       supplier_code: product.supplier_code || "",
       drive_folder_url: product.drive_folder_url || "",
+      size_system: product.size_system || "arg",
     });
   }
   updateCartUI();
@@ -943,9 +961,9 @@ function changeQty(index, delta) {
     const inCart = cartQtyForProduct(item.id, item.availability);
     if (inCart >= max) {
       if (item.availability === "restock") {
-        showToast("Máximo " + MAX_RESTOCK_QTY + " unidades por encargo");
+        showToast("En encargos el máximo es " + MAX_RESTOCK_QTY + " por producto");
       } else {
-        showToast("Solo hay " + max + " disponible" + (max === 1 ? "" : "s"));
+        showToast("No se puede: solo hay " + max + " en stock");
       }
       return;
     }
@@ -988,7 +1006,7 @@ function updateCartUI() {
       <img src="${item.images[0]}" alt="${item.name}" />
       <div class="item-details">
         <h4>${item.name}</h4>
-        <small>Talle: ${item.size}${item.availability === "restock" ? " · Restock" : ""}</small>
+        <small>Talle: ${typeof formatSizeLabel === "function" ? formatSizeLabel(item.size, item.size_system) : item.size}${item.availability === "restock" ? " · Encargo" : ""}</small>
         <p class="item-price">$${(item.price * item.quantity).toLocaleString("es-AR")}</p>
         <div class="qty-row">
           <button class="qty-btn" onclick="changeQty(${index}, -1)" aria-label="Menos">−</button>
@@ -1001,13 +1019,18 @@ function updateCartUI() {
   `).join("");
 }
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  if (!t) return;
-  t.textContent = msg || "Agregado al carrito";
-  t.classList.add("show");
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove("show"), 1800);
+function showToast(msg, ms) {
+  let el = document.getElementById("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    el.className = "toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg || "Agregado al carrito";
+  el.classList.add("show");
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove("show"), ms || 3200);
 }
 
 /* ---------- Checkout: Auth obligatorio + guardar pedido + WhatsApp ---------- */
