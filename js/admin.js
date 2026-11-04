@@ -253,6 +253,14 @@ function getSelectedSizeSystem() {
   return (el && el.value) || "arg";
 }
 
+/** Marca visual ARG/EUR/US (por si el navegador no soporta :has) */
+function syncSizeSystemUI() {
+  document.querySelectorAll(".size-sys-opt").forEach((lab) => {
+    const input = lab.querySelector('input[type="radio"]');
+    lab.classList.toggle("is-selected", !!(input && input.checked));
+  });
+}
+
 function renderSizeBuilder() {
   const wrap = document.getElementById("pf-size-builder");
   if (!wrap) return;
@@ -459,9 +467,11 @@ function bindAdminUi() {
     r.addEventListener("change", () => {
       const input = document.getElementById("pf-sizes");
       if (input) input.value = "";
+      syncSizeSystemUI();
       renderSizeBuilder();
     });
   });
+  syncSizeSystemUI();
 
   const activeCb = document.getElementById("pf-active");
   if (activeCb) activeCb.addEventListener("change", () => syncVisibleToggle());
@@ -1116,6 +1126,7 @@ function openProductForm(editId) {
     const sys = (p.size_system || "arg").toLowerCase();
     const radio = document.querySelector('input[name="pf-size-system"][value="' + sys + '"]');
     if (radio) radio.checked = true;
+    syncSizeSystemUI();
     setVal("pf-supplier", p.supplier || "");
     setVal("pf-supplier-code", p.supplier_code || "");
     setVal("pf-drive-url", p.drive_folder_url || "");
@@ -1140,6 +1151,7 @@ function openProductForm(editId) {
     resetNameBuilderState();
   }
   renderNameBuilder();
+  syncSizeSystemUI();
   renderSizeBuilder();
 
   modal.hidden = false;
