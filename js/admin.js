@@ -248,21 +248,40 @@ function renderNameBuilder() {
   wrap.innerHTML = html;
 }
 
+function getSelectedSizeSystem() {
+  const el = document.querySelector('input[name="pf-size-system"]:checked');
+  return (el && el.value) || "arg";
+}
+
 function renderSizeBuilder() {
   const wrap = document.getElementById("pf-size-builder");
   if (!wrap) return;
   const cat = document.getElementById("pf-category")?.value || "f11";
-  const sizes = SIZE_PRESETS[cat] || SIZE_PRESETS.f11;
+  const sys = getSelectedSizeSystem();
+  let sizes;
+  if (["guantes", "camisetas", "accesorios"].includes(cat)) {
+    sizes = SIZE_PRESETS[cat] || ["Único"];
+  } else if (sys === "us") {
+    sizes = (typeof SIZE_GUIDE !== "undefined" ? SIZE_GUIDE : []).map((r) => String(r.us));
+  } else if (sys === "eur") {
+    sizes = (typeof SIZE_GUIDE !== "undefined" ? SIZE_GUIDE : []).map((r) => String(r.eur));
+  } else {
+    sizes = (typeof SIZE_GUIDE !== "undefined" ? SIZE_GUIDE : []).map((r) => String(r.arg));
+  }
+  if (!sizes.length) sizes = SIZE_PRESETS[cat] || SIZE_PRESETS.f11;
   const current = (document.getElementById("pf-sizes")?.value || "")
-    .split(/[,;\s]+/)
+    .split(/[,;]+/)
     .map(s => s.trim())
     .filter(Boolean);
 
-  wrap.innerHTML = `<div class="nb-group"><span class="nb-label">Talles rápidos</span><div class="nb-chips">` +
+  const sysLab = (typeof SIZE_SYSTEM_LABEL !== "undefined" && SIZE_SYSTEM_LABEL[sys]) || "ARG";
+  wrap.innerHTML = `<div class="nb-group"><span class="nb-label">Talles disponibles (${sysLab})</span><div class="nb-chips">` +
     sizes.map(s => {
-      const on = current.includes(s);
-      return `<button type="button" class="nb-chip${on ? " active" : ""}" data-size-chip="${escapeChip(s)}">${escapeChip(s)}</button>`;
-    }).join("") + `</div></div>`;
+      const on = current.includes(String(s));
+      const label = typeof formatSizeChip === "function" ? formatSizeChip(s, sys) : s;
+      return `<button type="button" class="nb-chip${on ? " active" : ""}" data-size-chip="${escapeChip(s)}">${escapeChip(label)}</button>`;
+    }).join("") + `</div>
+    <p class="size-hint">El cliente ve este sistema y el equivalente en ARG (guía The Nine Sport).</p></div>`;
 }
 
 function toggleNameChip(step, val) {
@@ -300,6 +319,16 @@ function toggleSizeChip(size) {
   });
   input.value = list.join(", ");
   renderSizeBuilder();
+}
+
+function syncVisibleToggle() {
+  const cb = document.getElementById("pf-active");
+  const lab = document.getElementById("pf-active-label");
+  const wrap = document.getElementById("pf-visible-wrap");
+  if (!cb) return;
+  const on = !!cb.checked;
+  if (lab) lab.textContent = on ? "Visible en la tienda — SÍ" : "Oculto en la tienda — NO";
+  if (wrap) wrap.classList.toggle("is-on", on);
 }
 
 function onCategoryChange() {
@@ -426,6 +455,16 @@ function bindAdminUi() {
 
   const sizesInput = document.getElementById("pf-sizes");
   if (sizesInput) sizesInput.addEventListener("input", () => renderSizeBuilder());
+  document.querySelectorAll('input[name="pf-size-system"]').forEach((r) => {
+    r.addEventListener("change", () => {
+      const input = document.getElementById("pf-sizes");
+      if (input) input.value = "";
+      renderSizeBuilder();
+    });
+  });
+
+  const activeCb = document.getElementById("pf-active");
+  if (activeCb) activeCb.addEventListener("change", () => syncVisibleToggle());
 
 
   // Delegación: stock + cerrar modales
@@ -1050,7 +1089,7 @@ function openProductForm(editId) {
   if (idEl) idEl.value = "";
 
   const activeEl = document.getElementById("pf-active");
-  if (activeEl) activeEl.checked = true;
+  if (activeEl) { activeEl.checked = true; syncVisibleToggle(); }
 
   const prev = document.getElementById("pf-preview");
   const ph = document.getElementById("pf-photo-placeholder");
@@ -1074,12 +1113,15 @@ function openProductForm(editId) {
     setVal("pf-price", p.price || 0);
     setVal("pf-stock", p.stock_qty || 0);
     setVal("pf-sizes", Array.isArray(p.sizes) ? p.sizes.join(", ") : "");
+    const sys = (p.size_system || "arg").toLowerCase();
+    const radio = document.querySelector('input[name="pf-size-system"][value="' + sys + '"]');
+    if (radio) radio.checked = true;
     setVal("pf-supplier", p.supplier || "");
     setVal("pf-supplier-code", p.supplier_code || "");
     setVal("pf-drive-url", p.drive_folder_url || "");
     setVal("pf-badge", p.badge || "");
     setVal("pf-desc", p.description || "");
-    if (activeEl) activeEl.checked = p.active !== false;
+    if (activeEl) { activeEl.checked = p.active !== false; syncVisibleToggle(); }
     if (Array.isArray(p.images) && p.images[0] && prev) {
       pendingPhotoUrl = p.images[0];
       prev.src = p.images[0];
@@ -1216,6 +1258,7 @@ async function saveProduct(e) {
       price: Math.max(0, parseFloat(document.getElementById("pf-price").value) || 0),
       stock_qty: Math.max(0, parseInt(document.getElementById("pf-stock").value, 10) || 0),
       sizes: parseSizes(document.getElementById("pf-sizes").value),
+      size_system: getSelectedSizeSystem(),
       badge: document.getElementById("pf-badge").value.trim(),
       description: document.getElementById("pf-desc").value.trim(),
       supplier: (document.getElementById("pf-supplier")?.value || "").trim(),
