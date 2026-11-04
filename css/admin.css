@@ -850,13 +850,16 @@
   font-size: 1.2rem !important;
   font-weight: 800;
 }
-.product-form label {
+/* Solo labels de campo, no chips ni switch */
+.product-form > label,
+.product-form .pf-row label {
   font-size: 0.72rem !important;
   font-weight: 600 !important;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted) !important;
   margin: 14px 0 7px !important;
+  display: block;
 }
 .product-form input[type="text"],
 .product-form input[type="number"],
@@ -870,8 +873,12 @@
   color: #fff !important;
   font-size: 0.95rem !important;
   transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
-.product-form input:focus,
+.product-form input[type="text"]:focus,
+.product-form input[type="number"]:focus,
+.product-form input[type="url"]:focus,
 .product-form select:focus,
 .product-form textarea:focus {
   outline: none !important;
@@ -1847,13 +1854,106 @@
   color: #888;
 }
 
-.size-system-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; }
-.size-sys-opt {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
-  font-weight: 700; font-size: 0.85rem; cursor: pointer;
+/* Sistema ARG / EUR / US — chips (PC y celular) */
+.size-system-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 6px !important;
 }
-.size-sys-opt:has(input:checked) {
-  border-color: var(--neon, #ff2d4a); background: rgba(255,45,74,0.15); color: #fff;
+.size-sys-opt {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0 !important;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  font-weight: 800 !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  color: #eee !important;
+  cursor: pointer;
+  min-width: 64px;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+.size-sys-opt input {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none;
+  border: none !important;
+  box-shadow: none !important;
+}
+.size-sys-opt:has(input:checked),
+.size-sys-opt.is-selected {
+  border-color: var(--neon, #ff2d4a) !important;
+  background: rgba(255, 45, 74, 0.2) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(255, 45, 74, 0.35);
+}
+
+/* Switch visible — forzar layout en móvil */
+.pf-visible-wrap {
+  margin-top: 16px !important;
+  padding: 14px !important;
+  border-radius: 12px !important;
+  display: block !important;
+}
+.pf-visible-wrap .pf-visible {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 0.92rem !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+.pf-visible-wrap .pf-switch {
+  display: block !important;
+  width: 46px !important;
+  height: 26px !important;
+  flex-shrink: 0 !important;
+}
+.pf-visible-wrap #pf-active-label {
+  flex: 1;
+  line-height: 1.3;
+}
+.pf-visible-wrap .pf-visible-hint {
+  margin: 10px 0 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+  color: #999 !important;
+}
+
+@media (max-width: 480px) {
+  .product-modal-sheet {
+    max-height: 92vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .size-sys-opt {
+    flex: 1 1 30%;
+    min-width: 0;
+    padding: 12px 8px !important;
+  }
+  .pf-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .pf-actions button {
+    width: 100%;
+  }
 }
